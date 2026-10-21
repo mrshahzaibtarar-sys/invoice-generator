@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enterprise Invoice & Receipt Generator</title>
+    <style>
+        /* General Layout Base */
+        body { font-family: 'Courier New', Courier, monospace; margin: 30px; background-color: #f4f4f9; color: #000; }
+        .app-container { max-width: 800px; margin: auto; }
+        
+        /* Control Panel Containers (Hidden during print) */
+        .admin-panel { background: #eef2f7; padding: 20px; border-radius: 8px; margin-bottom: 20px; border: 1px dashed #999; }
+        .admin-panel h3 { margin-top: 0; color: #333; border-bottom: 1px solid #ccc; padding-bottom: 5px; }
+        .form-row { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 15px; }
+        .form-row input, .form-row select { padding: 8px; border: 1px solid #ccc; border-radius: 4px; flex: 1; min-width: 140px; font-family: Arial, sans-serif; }
+        .action-btn { padding: 10px 20px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        .action-btn:hover { background: #218838; }
+        .print-btn { background: #007bff; }
+        .print-btn:hover { background: #0069d9; }
+        .clear-btn { background: #dc3545; }
+        .clear-btn:hover { background: #c82333; }
+
+        /* Professional Dotted Corporate Invoice Sheet Layout */
+        .invoice-sheet { background: white; padding: 40px; border: 2px dotted #000; border-radius: 4px; box-shadow: 0 0 10px rgba(0, 0, 0, 0.05); }
+        
+        /* Header Segment Component styling */
+        .invoice-header { text-align: center; margin-bottom: 30px; border-bottom: 2px dotted #000; padding-bottom: 15px; }
+        .inst-title { font-size: 24px; font-weight: bold; text-transform: uppercase; margin: 0 0 5px 0; letter-spacing: 1px; }
+        .inst-details { font-size: 14px; margin: 3px 0; }
+        .doc-type-heading { font-size: 20px; font-weight: bold; text-transform: uppercase; margin: 15px 0 5px 0; background: #000; color: #fff; display: inline-block; padding: 4px 15px; letter-spacing: 2px; }
+        
+        /* Metadata Split block */
+        .meta-data-section { display: flex; justify-content: space-between; margin-bottom: 20px; font-size: 14px; line-height: 1.6; }
+        
+        /* Dotted Ledger Table Configuration */
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th { border-bottom: 2px dotted #000; border-top: 2px dotted #000; padding: 10px 5px; text-align: left; font-weight: bold; }
+        td { padding: 10px 5px; border-bottom: 1px dotted #555; font-size: 14px; }
+        .text-right { text-align: right; }
+        
+        /* Financial Totals Breakdown Area */
+        .totals-wrapper { margin-top: 20px; display: flex; justify-content: flex-end; }
+        .totals-table { width: 45%; font-size: 14px; }
+        .totals-table td { padding: 6px 5px; border-bottom: none; }
+        .grand-total-row { font-weight: bold; font-size: 16px; border-top: 2px dotted #000; border-bottom: 2px dotted #000; }
+        
+        /* Signature Area */
+        .signature-section { display: flex; justify-content: flex-end; margin-top: 50px; padding-top: 20px; border-top: 2px dotted #000; }
+        .signature-block { font-size: 13px; text-align: center; width: 200px; border-top: 1px dotted #000; padding-top: 5px; }
+
+        /* Strict Print Media Directives overrides */
+        @media print {
+            body { background: white; margin: 0; padding: 0; }
+            .admin-panel { display: none !important; }
+            .invoice-sheet { border: none; padding: 0; box-shadow: none; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="app-container">
+    <!-- Configuration Control Panel -->
+    <div class="admin-panel">
+        <h3>🏢 Step 1: Institutional Settings & Document Type</h3>
+        <div class="form-row">
+            <input type="text" id="setupName" value="Apex Global Institute" placeholder="Institution/Business Name" oninput="updateHeader()">
+            <input type="text" id="setupAddress" value="45 Main Commerce Zone, Sector-C" placeholder="Address Block" oninput="updateHeader()">
+            <input type="text" id="setupContact" value="Phone: +92-51-111222 | Email: billing@apex.edu" placeholder="Contact/Email Info" oninput="updateHeader()">
+        </div>
+        <div class="form-row">
+            <select id="setupDocType" onchange="updateHeader()">
+                <option value="INVOICE">Standard Invoice</option>
+                <option value="PAYMENT VOUCHER">Payment Voucher</option>
+                <option value="OFFICIAL RECEIPT">Official Receipt</option>
+            </select>
+            <input type="number" id="setupGST" value="18" placeholder="GST Tax (%)" oninput="recalculateTotals()">
+            <input type="number" id="setupDiscount" value="5" placeholder="Discount (%)" oninput="recalculateTotals()">
+        </div>
+
+        <h3>📦 Step 2: Ledger Item Records</h3>
+        <div class="form-row">
+            <input type="text" id="itemDesc" placeholder="Item Name/Fee Description">
+            <input type="number" id="itemPrice" placeholder="Unit Price">
+            <input type="number" id="itemQty" placeholder="Quantity" value="1">
+            <button onclick="addItem()" class="action-btn">Add Row</button>
+            <button onclick="clearItems()" class="action-btn clear-btn">Clear List</button>
+            <button onclick="window.print()" class="action-btn print-btn">🖨️ Print Sheet</button>
+        </div>
+    </div>
+
+    <!-- Printable Dotted Accounting Invoice Sheet Workspace Container -->
+    <div class="invoice-sheet">
+        <!-- Corporate Institutional Header Segment -->
+        <div class="invoice-header">
+            <div id="displayInstName" class="inst-title">Apex Global Institute</div>
+            <div id="displayInstAddress" class="inst-details">45 Main Commerce Zone, Sector-C</div>
+            <div id="displayInstContact" class="inst-details">Phone: +92-51-111222 | Email: billing@apex.edu</div>
+            <div><span id="displayDocType" class="doc-type-heading">INVOICE</span></div>
+        </div>
+
+        <!-- Ledger Meta Accounting Dates fields block -->
+        <div class="meta-data-section">
+            <div>
+                <strong>Date:</strong> <span id="currentDate"></span><br>
+                <strong>System Registry Ref:</strong> #<span id="invoiceNum">10245</span>
+            </div>
+            <div class="text-right">
+                <strong>Accounting Mode:</strong> Browser Native Static System<br>
+                <strong>Currency Unit:</strong> Standard Fiat ($)
+            </div>
+        </div>
+
+        <!-- Dotted Ledger Main Ledger Accounting Table -->
+        <table>
+            <thead>
+                <tr>
+                    <th>Description / Details</th>
+                    <th class="text-right" style="width: 15%;">Rate</th>
+                    <th class="text-right" style="width: 12%;">Qty</th>
+                    <th class="text-right" style="width: 18%;">Net Value</th>
+                </tr>
+            </thead>
+            <tbody id="invoiceItems">
+                <!-- Line Rows populate dynamically right here -->
+            </tbody>
+        </table>
+
+        <!-- Right Aligned Complex Totals Breakdown Table block -->
+        <div class="totals-wrapper">
+            <table class="totals-table">
+                <tr>
+                    <td>Subtotal value:</td>
+                    <td id="calcSubtotal" class="text-right">$0.00</td>
+                </tr>
+                <tr>
+                    <td>Discount Deduction (<span id="txtDiscountPerc">5</span>%):</td>
+                    <td id="calcDiscount" class="text-right">-$0.00</td>
+                </tr>
+                <tr>
+                    <td>State Tax Assessment GST (<span id="txtTaxPerc">18</span>%):</td>
+                    <td id="calcTax" class="text-right">+$0.00</td>
+                </tr>
+                <tr class="grand-total-row">
+                    <td>GRAND TOTAL:</td>
+                    <td id="calcGrandTotal" class="text-right">$0.00</td>
+                </tr>
+            </table>
+        </div>
+
+        <!-- Clean Authorization Signature Footer -->
+        <div class="signature-section">
+            <div class="signature-block">Authorized Clearance Officer</div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let itemRecordsList = [];
+
+    document.addEventListener("DOMContentLoaded", function() {
+        document.getElementById('currentDate').innerText = new Date().toLocaleDateString();
+        updateHeader();
+    });
+
+    function updateHeader() {
+        document.getElementById('displayInstName').innerText = document.getElementById('setupName').value || "Business Profile Enterprise";
+        document.getElementById('displayInstAddress').innerText = document.getElementById('setupAddress').value || "Global Network Depot";
+        document.getElementById('displayInstContact').innerText = document.getElementById('setupContact').value || "No Communications Details Specified";
+        document.getElementById('displayDocType').innerText = document.getElementById('setupDocType').value;
+        recalculateTotals();
+    }
+
+    function addItem() {
+        const descField = document.getElementById('itemDesc');
+        const priceField = document.getElementById('itemPrice');
+        const qtyField = document.getElementById('itemQty');
+        
+        const description = descField.value;
+        const rateVal = parseFloat(priceField.value);
+        const quantityVal = parseInt(qtyField.value);
+
+        if (!description || isNaN(rateVal) || isNaN(quantityVal) || rateVal <= 0 || quantityVal <= 0) {
+            alert("Please complete billing forms with positive numerical arguments.");
+            return;
+        }
+
+        itemRecordsList.push({ name: description, rate: rateVal, qty: quantityVal, net: rateVal * quantityVal });
+
+        descField.value = '';
+        priceField.value = '';
+        qtyField.value = '1';
+        recalculateTotals();
+    }
+
+    function clearItems() {
+        itemRecordsList = [];
+        recalculateTotals();
+    }
+
+    function recalculateTotals() {
+        const tableBody = document.getElementById('invoiceItems');
+        tableBody.innerHTML = "";
+        let rawBaseSubtotal = 0;
+
+        if (itemRecordsList.length === 0) {
+            tableBody.innerHTML = `<tr><td colspan="4" style="text-align: center; color: #777; font-style: italic;">No items added yet. Use Step 2 above to add records.</td></tr>`;
+        } else {
+            itemRecordsList.forEach(record => {
+                rawBaseSubtotal += record.net;
+                const rowHtml = `<tr>
+                    <td>${record.name}</td>
+                    <td class="text-right">$${record.rate.toFixed(2)}</td>
+                    <td class="text-right">${record.qty}</td>
+                    <td class="text-right">$${record.net.toFixed(2)}</td>
+                </tr>`;
+                tableBody.innerHTML += rowHtml;
+            });
+        }
+
+        const discountPercentage = parseFloat(document.getElementById('setupDiscount').value) || 0;
+        const taxPercentage = parseFloat(document.getElementById('setupGST').value) || 0;
+
+        const calculatedDiscountVal = rawBaseSubtotal * (discountPercentage / 100);
+        const taxableAmntSubtotal = rawBaseSubtotal - calculatedDiscountVal;
+        const calculatedTaxVal = taxableAmntSubtotal * (taxPercentage / 100);
+        const finalCalculatedGrandTotal = taxableAmntSubtotal + calculatedTaxVal;
+
+        document.getElementById('txtDiscountPerc').innerText = discountPercentage;
+        document.getElementById('txtTaxPerc').innerText = taxPercentage;
+
+        document.getElementById('calcSubtotal').innerText = "$" + rawBaseSubtotal.toFixed(2);
+        document.getElementById('calcDiscount').innerText = "-$" + calculatedDiscountVal.toFixed(2);
+        document.getElementById('calcTax').innerText = "+$" + calculatedTaxVal.toFixed(2);
+        document.getElementById('calcGrandTotal').innerText = "$" + finalCalculatedGrandTotal.toFixed(2);
+    }
+</script>
+
+</body>
+</html>
