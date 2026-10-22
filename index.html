@@ -12,14 +12,25 @@
         /* Control Panel Containers (Hidden during print) */
         .admin-panel { background: #eef2f7; padding: 20px; border-radius: 8px; margin-bottom: 20px; border: 1px dashed #999; }
         .admin-panel h3 { margin-top: 0; color: #333; border-bottom: 1px solid #ccc; padding-bottom: 5px; }
-        .form-row { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 15px; }
-        .form-row input, .form-row select { padding: 8px; border: 1px solid #ccc; border-radius: 4px; flex: 1; min-width: 140px; font-family: Arial, sans-serif; }
+        .form-row { display: flex; flex-wrap: wrap; gap: 15px; margin-bottom: 15px; }
+        
+        /* Field Group wrapper for labels */
+        .field-group { flex: 1; min-width: 160px; display: flex; flex-direction: column; }
+        .field-group label { font-size: 11px; font-weight: bold; text-transform: uppercase; margin-bottom: 4px; color: #444; font-family: Arial, sans-serif; letter-spacing: 0.5px; }
+        .field-group input, .field-group select { padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-family: Arial, sans-serif; max-height: 150px; }
+        
         .action-btn { padding: 10px 20px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; }
         .action-btn:hover { background: #218838; }
         .print-btn { background: #007bff; }
         .print-btn:hover { background: #0069d9; }
         .clear-btn { background: #dc3545; }
         .clear-btn:hover { background: #c82333; }
+        .new-id-btn { padding: 4px 10px; background: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: bold; margin-left: 10px; }
+        .new-id-btn:hover { background: #5a6268; }
+        
+        /* Row delete button styling */
+        .delete-row-btn { background: #dc3545; color: white; border: none; padding: 4px 8px; border-radius: 3px; cursor: pointer; font-size: 12px; font-weight: bold; }
+        .delete-row-btn:hover { background: #c82333; }
 
         /* Professional Dotted Corporate Invoice Sheet Layout */
         .invoice-sheet { background: white; padding: 40px; border: 2px dotted #000; border-radius: 4px; box-shadow: 0 0 10px rgba(0, 0, 0, 0.05); }
@@ -31,8 +42,9 @@
         .doc-type-heading { font-size: 20px; font-weight: bold; text-transform: uppercase; margin: 15px 0 5px 0; background: #000; color: #fff; display: inline-block; padding: 4px 15px; letter-spacing: 2px; }
         
         /* Metadata Split block */
-        .meta-data-section { display: flex; justify-content: space-between; margin-bottom: 20px; font-size: 14px; line-height: 1.6; }
-        
+        .meta-data-section { display: flex; justify-content: space-between; margin-bottom: 20px; font-size: 14px; line-height: 1.6; align-items: flex-start; }
+        .client-box { background: #fafafa; border: 1px dashed #ccc; padding: 10px; border-radius: 4px; margin-bottom: 20px; font-size: 14px; }
+
         /* Dotted Ledger Table Configuration */
         table { width: 100%; border-collapse: collapse; margin-top: 15px; }
         th { border-bottom: 2px dotted #000; border-top: 2px dotted #000; padding: 10px 5px; text-align: left; font-weight: bold; }
@@ -41,7 +53,7 @@
         
         /* Financial Totals Breakdown Area */
         .totals-wrapper { margin-top: 20px; display: flex; justify-content: flex-end; }
-        .totals-table { width: 45%; font-size: 14px; }
+        .totals-table { width: 50%; font-size: 14px; }
         .totals-table td { padding: 6px 5px; border-bottom: none; }
         .grand-total-row { font-weight: bold; font-size: 16px; border-top: 2px dotted #000; border-bottom: 2px dotted #000; }
         
@@ -53,6 +65,8 @@
         @media print {
             body { background: white; margin: 0; padding: 0; }
             .admin-panel { display: none !important; }
+            .new-id-btn { display: none !important; }
+            .delete-row-btn { display: none !important; }
             .invoice-sheet { border: none; padding: 0; box-shadow: none; }
         }
     </style>
@@ -63,29 +77,113 @@
     <!-- Configuration Control Panel -->
     <div class="admin-panel">
         <h3>🏢 Step 1: Institutional Settings & Document Type</h3>
+        
         <div class="form-row">
-            <input type="text" id="setupName" value="Apex Global Institute" placeholder="Institution/Business Name" oninput="updateHeader()">
-            <input type="text" id="setupAddress" value="45 Main Commerce Zone, Sector-C" placeholder="Address Block" oninput="updateHeader()">
-            <input type="text" id="setupContact" value="Phone: +92-51-111222 | Email: billing@apex.edu" placeholder="Contact/Email Info" oninput="updateHeader()">
+            <div class="field-group">
+                <label for="setupName">Institution Name</label>
+                <input type="text" id="setupName" value="Apex Global Institute" placeholder="Institution/Business Name" oninput="updateHeader()">
+            </div>
+            <div class="field-group">
+                <label for="setupAddress">Address Block</label>
+                <input type="text" id="setupAddress" value="45 Main Commerce Zone, Sector-C" placeholder="Address Block" oninput="updateHeader()">
+            </div>
+            <div class="field-group">
+                <label for="setupContact">Contact / Tel / Email</label>
+                <input type="text" id="setupContact" value="Phone: +92-51-111222 | Email: billing@apex.edu" placeholder="Contact/Email Info" oninput="updateHeader()">
+            </div>
         </div>
+
         <div class="form-row">
-            <select id="setupDocType" onchange="updateHeader()">
-                <option value="INVOICE">Standard Invoice</option>
-                <option value="PAYMENT VOUCHER">Payment Voucher</option>
-                <option value="OFFICIAL RECEIPT">Official Receipt</option>
-            </select>
-            <input type="number" id="setupGST" value="18" placeholder="GST Tax (%)" oninput="recalculateTotals()">
-            <input type="number" id="setupDiscount" value="5" placeholder="Discount (%)" oninput="recalculateTotals()">
+            <div class="field-group">
+                <label for="setupDocType">Document Type</label>
+                <select id="setupDocType" onchange="handleDocTypeChange()">
+                    <option value="INVOICE">Standard Invoice</option>
+                    <option value="PAYMENT VOUCHER">Payment Voucher</option>
+                    <option value="OFFICIAL RECEIPT">Official Receipt</option>
+                </select>
+            </div>
+            <div class="field-group">
+                <label for="setupCurrency">Currency Select (Scrollable)</label>
+                <select id="setupCurrency" size="1" onchange="updateHeader()" style="overflow-y: auto;">
+                    <option value="$">United States Dollar - USD ($)</option>
+                    <option value="€">Eurozone - EUR (€)</option>
+                    <option value="£">United Kingdom - GBP (£)</option>
+                    <option value="CAD $">Canada - CAD ($)</option>
+                    <option value="AUD $">Australia - AUD ($)</option>
+                    <option value="¥">Japan - JPY (¥)</option>
+                    <option value="¥">China - CNY (¥)</option>
+                    <option value="₹">India - INR (₹)</option>
+                    <option value="Rs ">Pakistan - PKR (Rs)</option>
+                    <option value="৳">Bangladesh - BDT (৳)</option>
+                    <option value="₨">Sri Lanka - LKR (₨)</option>
+                    <option value="د.إ">United Arab Emirates - AED (د.إ)</option>
+                    <option value="ر.س">Saudi Arabia - SAR (ر.س)</option>
+                    <option value="OMR ">Oman - OMR (ر.ع.)</option>
+                    <option value="QAR ">Qatar - QAR (ر.ق)</option>
+                    <option value="KWD ">Kuwait - Kuwaiti Dinar (KD)</option>
+                    <option value="BHD ">Bahrain - BHD (BD)</option>
+                    <option value="JOD ">Jordan - JOD (JD)</option>
+                    <option value="EGP ">Egypt - EGP (£)</option>
+                    <option value="R ">South Africa - ZAR (R)</option>
+                    <option value="₦">Nigeria - NGN (₦)</option>
+                    <option value="Ksh ">Kenya - KES (Ksh)</option>
+                    <option value="R$ ">Brazil - BRL (R$)</option>
+                    <option value="MX$ ">Mexico - MXN ($)</option>
+                    <option value="S$ ">Singapore - SGD (S$)</option>
+                    <option value="CHF ">Switzerland - CHF (Fr)</option>
+                    <option value="NZD $">New Zealand - NZD ($)</option>
+                    <option value="kr ">Sweden / Norway / Denmark - SEK/NOK/DKK (kr)</option>
+                    <option value="zł">Poland - PLN (zł)</option>
+                    <option value=" Kč">Czech Republic - CZK (Kč)</option>
+                    <option value="Ft">Hungary - HUF (Ft)</option>
+                    <option value="₺">Turkey - TRY (₺)</option>
+                    <option value="₪">Israel - ILS (₪)</option>
+                    <option value="₩">South Korea - KRW (₩)</option>
+                    <option value="NT$">Taiwan - TWD (NT$)</option>
+                    <option value="HK$ ">Hong Kong - HKD (HK$)</option>
+                    <option value="RM">Malaysia - MYR (RM)</option>
+                    <option value="Rp">Indonesia - IDR (Rp)</option>
+                    <option value="₱">Philippines - PHP (₱)</option>
+                    <option value="฿">Thailand - THB (฿)</option>
+                    <option value="₫">Vietnam - VND (₫)</option>
+                </select>
+            </div>
+            <div class="field-group">
+                <label for="setupClient">To / Received From</label>
+                <input type="text" id="setupClient" value="Acme Corporation / John Doe" placeholder="Bill To / Received From" oninput="updateHeader()">
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="field-group">
+                <label for="setupGST">GST Tax (%)</label>
+                <input type="number" id="setupGST" value="18" placeholder="GST Tax (%)" oninput="recalculateTotals()">
+            </div>
+            <div class="field-group">
+                <label for="setupDiscount">Discount (%)</label>
+                <input type="number" id="setupDiscount" value="5" placeholder="Discount (%)" oninput="recalculateTotals()">
+            </div>
         </div>
 
         <h3>📦 Step 2: Ledger Item Records</h3>
-        <div class="form-row">
-            <input type="text" id="itemDesc" placeholder="Item Name/Fee Description">
-            <input type="number" id="itemPrice" placeholder="Unit Price">
-            <input type="number" id="itemQty" placeholder="Quantity" value="1">
-            <button onclick="addItem()" class="action-btn">Add Row</button>
-            <button onclick="clearItems()" class="action-btn clear-btn">Clear List</button>
-            <button onclick="window.print()" class="action-btn print-btn">🖨️ Print Sheet</button>
+        <div class="form-row" style="align-items: flex-end;">
+            <div class="field-group">
+                <label for="itemDesc">Item Name / Description</label>
+                <input type="text" id="itemDesc" placeholder="Item Name/Fee Description">
+            </div>
+            <div class="field-group">
+                <label for="itemPrice">Unit Price</label>
+                <input type="number" id="itemPrice" placeholder="Unit Price">
+            </div>
+            <div class="field-group">
+                <label for="itemQty">Quantity</label>
+                <input type="number" id="itemQty" placeholder="Quantity" value="1">
+            </div>
+            <div style="display: flex; gap: 10px;">
+                <button onclick="addItem()" class="action-btn">Add Row</button>
+                <button onclick="clearItems()" class="action-btn clear-btn">Clear List</button>
+                <button onclick="window.print()" class="action-btn print-btn">🖨️ Print Sheet</button>
+            </div>
         </div>
     </div>
 
@@ -103,12 +201,18 @@
         <div class="meta-data-section">
             <div>
                 <strong>Date:</strong> <span id="currentDate"></span><br>
-                <strong>System Registry Ref:</strong> #<span id="invoiceNum">10245</span>
+                <strong>System Registry Ref:</strong> #<span id="invoiceNum">INV-1001</span> 
+                <button onclick="incrementRegistryId()" class="new-id-btn" title="Generate Next Sequential ID">Next ID 🔄</button>
             </div>
             <div class="text-right">
                 <strong>Accounting Mode:</strong> Browser Native Static System<br>
-                <strong>Currency Unit:</strong> Standard Fiat ($)
+                <strong>Currency Unit:</strong> <span id="displayCurrencyLabel">USD ($)</span>
             </div>
+        </div>
+
+        <!-- Billed To / Received From Block -->
+        <div class="client-box">
+            <strong>To / Received From:</strong> <span id="displayClient">Acme Corporation / John Doe</span>
         </div>
 
         <!-- Dotted Ledger Main Ledger Accounting Table -->
@@ -119,6 +223,7 @@
                     <th class="text-right" style="width: 15%;">Rate</th>
                     <th class="text-right" style="width: 12%;">Qty</th>
                     <th class="text-right" style="width: 18%;">Net Value</th>
+                    <th class="text-right" style="width: 8%;">Action</th>
                 </tr>
             </thead>
             <tbody id="invoiceItems">
@@ -157,17 +262,52 @@
 
 <script>
     let itemRecordsList = [];
+    
+    // Sequence counters for different document types
+    let idCounters = {
+        "INVOICE": 1001,
+        "PAYMENT VOUCHER": 1001,
+        "OFFICIAL RECEIPT": 1001
+    };
 
     document.addEventListener("DOMContentLoaded", function() {
         document.getElementById('currentDate').innerText = new Date().toLocaleDateString();
         updateHeader();
     });
 
+    function getPrefix(docType) {
+        if (docType === "PAYMENT VOUCHER") return "PV-";
+        if (docType === "OFFICIAL RECEIPT") return "REC-";
+        return "INV-";
+    }
+
+    function handleDocTypeChange() {
+        const docType = document.getElementById('setupDocType').value;
+        const prefix = getPrefix(docType);
+        document.getElementById('invoiceNum').innerText = prefix + idCounters[docType];
+        updateHeader();
+    }
+
+    function incrementRegistryId() {
+        const docType = document.getElementById('setupDocType').value;
+        idCounters[docType]++;
+        const prefix = getPrefix(docType);
+        document.getElementById('invoiceNum').innerText = prefix + idCounters[docType];
+    }
+
     function updateHeader() {
+        const docType = document.getElementById('setupDocType').value;
         document.getElementById('displayInstName').innerText = document.getElementById('setupName').value || "Business Profile Enterprise";
         document.getElementById('displayInstAddress').innerText = document.getElementById('setupAddress').value || "Global Network Depot";
         document.getElementById('displayInstContact').innerText = document.getElementById('setupContact').value || "No Communications Details Specified";
-        document.getElementById('displayDocType').innerText = document.getElementById('setupDocType').value;
+        document.getElementById('displayDocType').innerText = docType;
+        
+        const currencySelect = document.getElementById('setupCurrency');
+        const selectedCurrencyText = currencySelect.options[currencySelect.selectedIndex].text;
+        
+        document.getElementById('displayCurrencyLabel').innerText = selectedCurrencyText;
+        document.getElementById('displayClient').innerText = document.getElementById('setupClient').value || "General Walk-in Client";
+        
         recalculateTotals();
     }
 
@@ -193,6 +333,11 @@
         recalculateTotals();
     }
 
+    function deleteItem(index) {
+        itemRecordsList.splice(index, 1);
+        recalculateTotals();
+    }
+
     function clearItems() {
         itemRecordsList = [];
         recalculateTotals();
@@ -202,17 +347,19 @@
         const tableBody = document.getElementById('invoiceItems');
         tableBody.innerHTML = "";
         let rawBaseSubtotal = 0;
+        const currencySymbol = document.getElementById('setupCurrency').value;
 
         if (itemRecordsList.length === 0) {
-            tableBody.innerHTML = `<tr><td colspan="4" style="text-align: center; color: #777; font-style: italic;">No items added yet. Use Step 2 above to add records.</td></tr>`;
+            tableBody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: #777; font-style: italic;">No items added yet. Use Step 2 above to add records.</td></tr>`;
         } else {
-            itemRecordsList.forEach(record => {
+            itemRecordsList.forEach((record, index) => {
                 rawBaseSubtotal += record.net;
                 const rowHtml = `<tr>
                     <td>${record.name}</td>
-                    <td class="text-right">$${record.rate.toFixed(2)}</td>
+                    <td class="text-right">${currencySymbol}${record.rate.toFixed(2)}</td>
                     <td class="text-right">${record.qty}</td>
-                    <td class="text-right">$${record.net.toFixed(2)}</td>
+                    <td class="text-right">${currencySymbol}${record.net.toFixed(2)}</td>
+                    <td class="text-right"><button onclick="deleteItem(${index})" class="delete-row-btn" title="Delete Row">✕ Del</button></td>
                 </tr>`;
                 tableBody.innerHTML += rowHtml;
             });
@@ -229,10 +376,10 @@
         document.getElementById('txtDiscountPerc').innerText = discountPercentage;
         document.getElementById('txtTaxPerc').innerText = taxPercentage;
 
-        document.getElementById('calcSubtotal').innerText = "$" + rawBaseSubtotal.toFixed(2);
-        document.getElementById('calcDiscount').innerText = "-$" + calculatedDiscountVal.toFixed(2);
-        document.getElementById('calcTax').innerText = "+$" + calculatedTaxVal.toFixed(2);
-        document.getElementById('calcGrandTotal').innerText = "$" + finalCalculatedGrandTotal.toFixed(2);
+        document.getElementById('calcSubtotal').innerText = currencySymbol + rawBaseSubtotal.toFixed(2);
+        document.getElementById('calcDiscount').innerText = "-" + currencySymbol + calculatedDiscountVal.toFixed(2);
+        document.getElementById('calcTax').innerText = "+" + currencySymbol + calculatedTaxVal.toFixed(2);
+        document.getElementById('calcGrandTotal').innerText = currencySymbol + finalCalculatedGrandTotal.toFixed(2);
     }
 </script>
 
