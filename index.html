@@ -17,7 +17,7 @@
         /* Field Group wrapper for labels */
         .field-group { flex: 1; min-width: 160px; display: flex; flex-direction: column; }
         .field-group label { font-size: 11px; font-weight: bold; text-transform: uppercase; margin-bottom: 4px; color: #444; font-family: Arial, sans-serif; letter-spacing: 0.5px; }
-        .field-group input, .field-group select { padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-family: Arial, sans-serif; max-height: 150px; }
+        .field-group input, .field-group select { padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-family: Arial, sans-serif; }
         
         .action-btn { padding: 10px 20px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; }
         .action-btn:hover { background: #218838; }
@@ -37,13 +37,14 @@
         
         /* Header Segment Component styling */
         .invoice-header { text-align: center; margin-bottom: 30px; border-bottom: 2px dotted #000; padding-bottom: 15px; }
+        .logo-preview { max-height: 80px; max-width: 200px; margin-bottom: 10px; object-fit: contain; display: block; margin-left: auto; margin-right: auto; }
         .inst-title { font-size: 24px; font-weight: bold; text-transform: uppercase; margin: 0 0 5px 0; letter-spacing: 1px; }
         .inst-details { font-size: 14px; margin: 3px 0; }
         .doc-type-heading { font-size: 20px; font-weight: bold; text-transform: uppercase; margin: 15px 0 5px 0; background: #000; color: #fff; display: inline-block; padding: 4px 15px; letter-spacing: 2px; }
         
         /* Metadata Split block */
         .meta-data-section { display: flex; justify-content: space-between; margin-bottom: 20px; font-size: 14px; line-height: 1.6; align-items: flex-start; }
-        .client-box { background: #fafafa; border: 1px dashed #ccc; padding: 10px; border-radius: 4px; margin-bottom: 20px; font-size: 14px; }
+        .client-box { background: #fafafa; border: 1px dashed #ccc; padding: 10px; border-radius: 4px; margin-bottom: 20px; font-size: 14px; display: none; }
 
         /* Dotted Ledger Table Configuration */
         table { width: 100%; border-collapse: collapse; margin-top: 15px; }
@@ -80,20 +81,24 @@
         
         <div class="form-row">
             <div class="field-group">
-                <label for="setupName">Institution Name</label>
+                <label for="setupLogo">Company Logo (Optional)</label>
+                <input type="file" id="setupLogo" accept="image/*" onchange="loadLogo(event)">
+            </div>
+            <div class="field-group">
+                <label for="setupName">Institution Name (Optional)</label>
                 <input type="text" id="setupName" value="Apex Global Institute" placeholder="Institution/Business Name" oninput="updateHeader()">
             </div>
             <div class="field-group">
-                <label for="setupAddress">Address Block</label>
+                <label for="setupAddress">Address Block (Optional)</label>
                 <input type="text" id="setupAddress" value="45 Main Commerce Zone, Sector-C" placeholder="Address Block" oninput="updateHeader()">
-            </div>
-            <div class="field-group">
-                <label for="setupContact">Contact / Tel / Email</label>
-                <input type="text" id="setupContact" value="Phone: +92-51-111222 | Email: billing@apex.edu" placeholder="Contact/Email Info" oninput="updateHeader()">
             </div>
         </div>
 
         <div class="form-row">
+            <div class="field-group">
+                <label for="setupContact">Contact / Tel / Email (Optional)</label>
+                <input type="text" id="setupContact" value="Phone: +92-51-111222 | Email: billing@apex.edu" placeholder="Contact/Email Info" oninput="updateHeader()">
+            </div>
             <div class="field-group">
                 <label for="setupDocType">Document Type</label>
                 <select id="setupDocType" onchange="handleDocTypeChange()">
@@ -103,8 +108,8 @@
                 </select>
             </div>
             <div class="field-group">
-                <label for="setupCurrency">Currency Select (Scrollable)</label>
-                <select id="setupCurrency" size="1" onchange="updateHeader()" style="overflow-y: auto;">
+                <label for="setupCurrency">Currency Select</label>
+                <select id="setupCurrency" onchange="updateHeader()">
                     <option value="$">United States Dollar - USD ($)</option>
                     <option value="€">Eurozone - EUR (€)</option>
                     <option value="£">United Kingdom - GBP (£)</option>
@@ -148,13 +153,13 @@
                     <option value="₫">Vietnam - VND (₫)</option>
                 </select>
             </div>
-            <div class="field-group">
-                <label for="setupClient">To / Received From</label>
-                <input type="text" id="setupClient" value="Acme Corporation / John Doe" placeholder="Bill To / Received From" oninput="updateHeader()">
-            </div>
         </div>
 
         <div class="form-row">
+            <div class="field-group">
+                <label for="setupClient">To / Received From (Optional)</label>
+                <input type="text" id="setupClient" value="Acme Corporation / John Doe" placeholder="Bill To / Received From" oninput="updateHeader()">
+            </div>
             <div class="field-group">
                 <label for="setupGST">GST Tax (%)</label>
                 <input type="number" id="setupGST" value="18" placeholder="GST Tax (%)" oninput="recalculateTotals()">
@@ -191,9 +196,10 @@
     <div class="invoice-sheet">
         <!-- Corporate Institutional Header Segment -->
         <div class="invoice-header">
-            <div id="displayInstName" class="inst-title">Apex Global Institute</div>
-            <div id="displayInstAddress" class="inst-details">45 Main Commerce Zone, Sector-C</div>
-            <div id="displayInstContact" class="inst-details">Phone: +92-51-111222 | Email: billing@apex.edu</div>
+            <img id="displayLogo" class="logo-preview" style="display: none;" alt="Company Logo">
+            <div id="displayInstName" class="inst-title"></div>
+            <div id="displayInstAddress" class="inst-details"></div>
+            <div id="displayInstContact" class="inst-details"></div>
             <div><span id="displayDocType" class="doc-type-heading">INVOICE</span></div>
         </div>
 
@@ -204,15 +210,11 @@
                 <strong>System Registry Ref:</strong> #<span id="invoiceNum">INV-1001</span> 
                 <button onclick="incrementRegistryId()" class="new-id-btn" title="Generate Next Sequential ID">Next ID 🔄</button>
             </div>
-            <div class="text-right">
-                <strong>Accounting Mode:</strong> Browser Native Static System<br>
-                <strong>Currency Unit:</strong> <span id="displayCurrencyLabel">USD ($)</span>
-            </div>
         </div>
 
         <!-- Billed To / Received From Block -->
-        <div class="client-box">
-            <strong>To / Received From:</strong> <span id="displayClient">Acme Corporation / John Doe</span>
+        <div id="clientBoxContainer" class="client-box">
+            <strong>To / Received From:</strong> <span id="displayClient"></span>
         </div>
 
         <!-- Dotted Ledger Main Ledger Accounting Table -->
@@ -275,6 +277,22 @@
         updateHeader();
     });
 
+    function loadLogo(event) {
+        const file = event.target.files[0];
+        const logoImg = document.getElementById('displayLogo');
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                logoImg.src = e.target.result;
+                logoImg.style.display = 'block';
+            }
+            reader.readAsDataURL(file);
+        } else {
+            logoImg.src = '';
+            logoImg.style.display = 'none';
+        }
+    }
+
     function getPrefix(docType) {
         if (docType === "PAYMENT VOUCHER") return "PV-";
         if (docType === "OFFICIAL RECEIPT") return "REC-";
@@ -297,16 +315,52 @@
 
     function updateHeader() {
         const docType = document.getElementById('setupDocType').value;
-        document.getElementById('displayInstName').innerText = document.getElementById('setupName').value || "Business Profile Enterprise";
-        document.getElementById('displayInstAddress').innerText = document.getElementById('setupAddress').value || "Global Network Depot";
-        document.getElementById('displayInstContact').innerText = document.getElementById('setupContact').value || "No Communications Details Specified";
         document.getElementById('displayDocType').innerText = docType;
         
-        const currencySelect = document.getElementById('setupCurrency');
-        const selectedCurrencyText = currencySelect.options[currencySelect.selectedIndex].text;
-        
-        document.getElementById('displayCurrencyLabel').innerText = selectedCurrencyText;
-        document.getElementById('displayClient').innerText = document.getElementById('setupClient').value || "General Walk-in Client";
+        // Optional Institution Name
+        const nameVal = document.getElementById('setupName').value.trim();
+        const nameElem = document.getElementById('displayInstName');
+        if (nameVal) {
+            nameElem.innerText = nameVal;
+            nameElem.style.display = 'block';
+        } else {
+            nameElem.innerText = '';
+            nameElem.style.display = 'none';
+        }
+
+        // Optional Address Block
+        const addressVal = document.getElementById('setupAddress').value.trim();
+        const addressElem = document.getElementById('displayInstAddress');
+        if (addressVal) {
+            addressElem.innerText = addressVal;
+            addressElem.style.display = 'block';
+        } else {
+            addressElem.innerText = '';
+            addressElem.style.display = 'none';
+        }
+
+        // Optional Contact Info
+        const contactVal = document.getElementById('setupContact').value.trim();
+        const contactElem = document.getElementById('displayInstContact');
+        if (contactVal) {
+            contactElem.innerText = contactVal;
+            contactElem.style.display = 'block';
+        } else {
+            contactElem.innerText = '';
+            contactElem.style.display = 'none';
+        }
+
+        // Optional Client / To Box
+        const clientVal = document.getElementById('setupClient').value.trim();
+        const clientBox = document.getElementById('clientBoxContainer');
+        const clientElem = document.getElementById('displayClient');
+        if (clientVal) {
+            clientElem.innerText = clientVal;
+            clientBox.style.display = 'block';
+        } else {
+            clientElem.innerText = '';
+            clientBox.style.display = 'none';
+        }
         
         recalculateTotals();
     }
